@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shubham Kashyap - Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #E5E7EB;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: rgba(3, 7, 18, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .section-card {
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .section-card.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .section-title { color: #38BDF8; }
+        .skill-badge { background-color: #374151; color: #D1D5DB; }
+        .project-link { color: #7DD3FC; }
+        .nav-link { position: relative; transition: color 0.3s ease; }
+        .nav-link.active, .nav-link:hover { color: #38BDF8; }
+        .nav-link:after { content: ''; position: absolute; width: 0; height: 2px; bottom: -4px; left: 50%; background-color: #38BDF8; transition: all 0.3s ease; transform: translateX(-50%); }
+        .nav-link.active:after, .nav-link:hover:after { width: 100%; }
+        .content-section { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .content-section.visible { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content { background-color: #111827; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.75rem; padding: 2rem; max-width: 50rem; width: 90%; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.3s ease; display: flex; flex-direction: column; }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        
+        #mute-btn {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 101;
+            background-color: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        .blog-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .blog-content p {
+            margin-bottom: 1rem;
+            line-height: 1.75;
+        }
+        .blog-content pre {
+            background-color: #030712;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow: auto;
+            margin-bottom: 1rem;
+            font-family: 'Fira Code', monospace;
+            resize: vertical;
+            min-height: 150px;
+            max-height: 50vh;
+        }
+        .blog-content ul {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .social-icon {
+            width: 2rem;
+            height: 2rem;
+            filter: grayscale(1) invert(1) brightness(2);
+            transition: filter 0.3s ease, transform 0.3s ease;
+        }
+        .social-icon:hover {
+            filter: grayscale(1) invert(1) brightness(3);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <canvas id="bg-canvas"></canvas>
+
+    <button id="mute-btn">
+        <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+        <svg id="sound-off-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l-4-4m0 4l4-4" />
+        </svg>
+    </button>
+
+    <header class="sticky-header">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex justify-center space-x-4 sm:space-x-8 text-gray-400 font-medium py-6">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#experience" class="nav-link">Experience</a>
+                <a href="#projects" class="nav-link">Projects</a>
+                <a href="#blog" class="nav-link">Blog</a>
+                <a href="#skills" class="nav-link">Skills</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <main>
+            <!-- Home Section -->
+            <section id="home" class="content-section visible text-center">
+                <div class="py-24">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight">Shubham Kashyap</h1>
+                    <p class="mt-4 text-lg sm:text-xl text-gray-300">Software Development Engineer</p>
+                    <div class="mt-8 flex justify-center items-center space-x-6">
+                        <a href="https://www.linkedin.com/in/shubhamkyup/" target="_blank" class="text-gray-400 hover:text-white transition-colors" aria-label="LinkedIn"><svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>
+                        <a href="https://github.com/shubhamkashyap1601" target="_blank" class="text-gray-400 hover:text-white transition-colors" aria-label="GitHub"><svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.49.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z"/></svg></a>
+                        <a href="https://codeforces.com/profile/Shubhamkyup" target="_blank" class="text-gray-400 hover:text-white transition-colors" aria-label="Codeforces"><img src="assets/icons8-codeforces-24.png" class="social-icon" alt="Codeforces"></a>
+                        <a href="https://www.codechef.com/users/shubhamkyup" target="_blank" class="text-gray-400 hover:text-white transition-colors" aria-label="CodeChef"><img src="assets/icons8-codechef-50.png" class="social-icon" alt="CodeChef"></a>
+                        <a href="https://leetcode.com/u/shubhamkyup/" target="_blank" class="text-gray-400 hover:text-white transition-colors" aria-label="Leetcode"><img src="assets/icons8-leetcode-24.png" class="social-icon" alt="LeetCode"></a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="content-section space-y-8">
+                <div class="section-card">
+                    <div class="p-6 sm:p-8">
+                        <h2 class="text-2xl sm:text-3xl font-bold section-title mb-4">About Me</h2>
+                        <p class="text-gray-300 leading-relaxed">I am a passionate and driven Computer Science student at IIIT Nagpur with a strong foundation in software development and problem-solving. I thrive on building efficient, scalable, and secure systems. My experience spans across backend development with technologies like Golang and Python, and I'm always eager to learn and tackle new challenges in the world of technology.</p>
+                    </div>
+                </div>
+                <div class="section-card">
+                     <h2 class="text-2xl sm:text-3xl font-bold section-title mb-4 p-6 sm:p-8">Education</h2>
+                     <div class="px-6 sm:px-8 pb-6 sm:pb-8">
+                        <h3 class="font-semibold text-white text-lg">Indian Institute of Information Technology, Nagpur</h3>
+                        <p class="text-gray-400">Bachelor of Technology in Computer Science Engineering</p>
+                        <p class="text-sm text-gray-500">Dec 2021 – May 2025</p>
+                     </div>
+                </div>
+            </section>
+            
+            <section id="experience" class="content-section section-card p-6 sm:p-8">
+                 <h2 class="text-2xl sm:text-3xl font-bold section-title mb-6">Work Experience</h2>
+                <div class="space-y-8">
+                    <div class="flex flex-col sm:flex-row"><div class="w-full sm:w-1/4 mb-2 sm:mb-0"><h3 class="font-semibold text-white">Carousell</h3><p class="text-sm text-gray-400">Jan 2025 – Present</p><p class="text-sm text-gray-500">Backend Intern</p></div><div class="w-full sm:w-3/4"><ul class="list-disc list-inside text-gray-300 space-y-2"><li>Developed a system manager to monitor over 100 critical vulnerabilities and ensure version compatibility across 5+ microservices, enhancing system security and stability.</li><li>Designed and implemented 6 new gRPC APIs, improving system manager efficiency by approximately 15% and enabling seamless, real-time data exchange between components.</li><li>Optimized existing API endpoints, leading to a 10% reduction in average response time for key monitoring operations.</li></ul></div></div>
+                    <div class="border-t border-gray-700/50 my-6"></div>
+                    <div class="flex flex-col sm:flex-row"><div class="w-full sm:w-1/4 mb-2 sm:mb-0"><h3 class="font-semibold text-white">Wingify</h3><p class="text-sm text-gray-400">Sep 2024 – Nov 2024</p><p class="text-sm text-gray-500">Backend Intern</p></div><div class="w-full sm:w-3/4"><ul class="list-disc list-inside text-gray-300 space-y-2"><li>Implemented an automated email notification system for starter plan activation in the V2Admin portal, reducing manual intervention for dispatch by approximately 70%.</li><li>Built an email notification system to ensure timely communication for dozens of monthly starter plan activations.</li><li>Created 5+ new API endpoints for contract management, integrating with Salesforce to disable several inactive contracts monthly and improve data accuracy.</li></ul></div></div>
+                </div>
+            </section>
+
+            <section id="projects" class="content-section section-card p-6 sm:p-8">
+                <h2 class="text-2xl sm:text-3xl font-bold section-title mb-6">Projects & Achievements</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="font-bold text-xl text-white mb-4">Projects</h3>
+                        <div class="space-y-6">
+                            <div class="bg-gray-900/50 p-6 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer" onclick="openModal('pixy')">
+                                <h4 class="font-bold text-lg text-white mb-2">Pixy - Chess Engine</h4>
+                                <p class="text-gray-400 mb-4 text-sm">A performant, UCI-compliant chess engine built from scratch in C++.</p>
+                                <span class="font-medium text-sm project-link">View Details &rarr;</span>
+                            </div>
+                            <div class="bg-gray-900/50 p-6 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer" onclick="openModal('dotslash')">
+                                <h4 class="font-bold text-lg text-white mb-2">DotSlash</h4>
+                                <p class="text-gray-400 mb-4 text-sm">A full-stack MERN platform for competitive programming resources.</p>
+                                <span class="font-medium text-sm project-link">View Details &rarr;</span>
+                            </div>
+                             <div class="bg-gray-900/50 p-6 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer" onclick="openModal('befunge')">
+                                <h4 class="font-bold text-lg text-white mb-2">Befunge Interpreter</h4>
+                                <p class="text-gray-400 mb-4 text-sm">A Java-based interpreter for the esoteric 2D language, Befunge-93.</p>
+                                <span class="font-medium text-sm project-link">View Details &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xl text-white mb-4">Achievements</h3>
+                        <div class="bg-gray-900/50 p-6 rounded-lg h-full">
+                            <ul class="list-disc list-inside text-gray-300 space-y-3 text-sm">
+                                <li>
+                                    <span class="font-semibold text-white">Competitive Programming Excellence:</span> Achieved top rankings including Codeforces Specialist (1565), LeetCode peak (1802), and CodeChef 4-star (1865).
+                                </li>
+                                <li>
+                                    <span class="font-semibold text-white">ICPC Regionalist & Hackathon Finalist:</span> Competed as an ICPC Kanpur Regionalist and secured a finalist position in the IIIT Sricity Hackathon (Mythodata) among 100+ teams.
+                                </li>
+                                <li>
+                                    <span class="font-semibold text-white">Open Source Contributor:</span> Recognized as a winner in Hacktoberfest 2023 & HackSquad 2023 for impactful contributions to open-source projects.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="blog" class="content-section space-y-8">
+                <div class="section-card p-6 sm:p-8">
+                    <h2 class="text-2xl sm:text-3xl font-bold section-title mb-6">Blog</h2>
+                    <div class="space-y-8">
+                        <div class="bg-gray-900/50 p-6 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer" onclick="openModal('blog-alphabeta')">
+                            <p class="text-sm text-gray-500 mb-1">July 15, 2024</p>
+                            <h3 class="font-bold text-xl text-white mb-2">Understanding Alpha-Beta Pruning in Game AI</h3>
+                            <p class="text-gray-400 mb-4">A deep dive into the optimization technique that makes Minimax algorithms for games like chess significantly more efficient...</p>
+                            <span class="font-medium project-link">Read More &rarr;</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills" class="content-section section-card p-6 sm:p-8">
+                <h2 class="text-2xl sm:text-3xl font-bold section-title mb-6">Technical Skills</h2>
+                <div class="space-y-6">
+                    <div><h3 class="font-semibold text-white mb-3">Languages / DB</h3><div class="flex flex-wrap gap-2"><span class="skill-badge px-3 py-1 rounded-full text-sm">C++</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Golang</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Python</span><span class="skill-badge px-3 py-1 rounded-full text-sm">JavaScript</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Java</span><span class="skill-badge px-3 py-1 rounded-full text-sm">SQL</span><span class="skill-badge px-3 py-1 rounded-full text-sm">HTML</span><span class="skill-badge px-3 py-1 rounded-full text-sm">CSS</span></div></div>
+                    <div><h3 class="font-semibold text-white mb-3">Frameworks / Tools</h3><div class="flex flex-wrap gap-2"><span class="skill-badge px-3 py-1 rounded-full text-sm">ReactJS</span><span class="skill-badge px-3 py-1 rounded-full text-sm">gRPC</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Docker</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Kubernetes</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Git</span><span class="skill-badge px-3 py-1 rounded-full text-sm">GitHub</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Bitbucket</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Postman</span></div></div>
+                    <div><h3 class="font-semibold text-white mb-3">Platforms / IDEs</h3><div class="flex flex-wrap gap-2"><span class="skill-badge px-3 py-1 rounded-full text-sm">Linux</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Qt</span><span class="skill-badge px-3 py-1 rounded-full text-sm">VSCode</span><span class="skill-badge px-3 py-1 rounded-full text-sm">PyCharm</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Android Studio</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Figma</span><span class="skill-badge px-3 py-1 rounded-full text-sm">AutoCAD</span></div></div>
+                </div>
+            </section>
+            
+            <section id="contact" class="content-section text-center py-16">
+                 <div class="section-card p-8 sm:p-12 max-w-2xl mx-auto">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">Get In Touch</h2>
+                    <p class="text-gray-400 mb-6">I'm currently looking for new opportunities. My inbox is always open. Whether you have a question or just want to say hi, I'll try my best to get back to you!</p>
+                    <a href="mailto:shubhamkyup@gmail.com" class="text-sky-400 font-medium text-lg hover:text-sky-300 transition-colors">
+                        shubhamkyup@gmail.com
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+   <!-- Modals -->
+    <div id="modal-pixy" class="modal-overlay" onclick="closeModal('pixy')"><div class="modal-content" onclick="event.stopPropagation()"><h2 class="text-3xl font-bold text-white mb-4">Pixy - Chess Engine</h2><img src="https://images.unsplash.com/photo-1580541832626-2a7131ee809f?q=80&w=2070&auto=format&fit=crop" alt="Pixy Chess Engine" class="rounded-lg mb-6 w-full"><div class="text-gray-300 space-y-4"><p>Crafted a performant, full-featured chess engine from scratch in C++. The engine incorporates comprehensive rule support including move validation, checkmate, stalemate, and draw detection (50-move rule & threefold repetition).</p><p>Engineered a Minimax-based AI with alpha-beta pruning, further enhanced with quiescence search, iterative deepening, and advanced move ordering heuristics, achieving a play strength towards 1500 Elo. It also features adaptive search logic that dynamically adjusts thinking depth across game phases.</p></div><h3 class="font-semibold text-white mt-6 mb-3">Tech Stack</h3><div class="flex flex-wrap gap-2"><span class="skill-badge px-3 py-1 rounded-full text-sm">C++</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Minimax Algorithm</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Alpha-Beta Pruning</span></div><div class="mt-8 text-right"><a href="https://github.com/Shubhamkashyap1601/Pixy-Chess-Engine" target="_blank" class="font-medium project-link hover:underline">View Source Code &rarr;</a></div></div></div>
+    <div id="modal-dotslash" class="modal-overlay" onclick="closeModal('dotslash')"><div class="modal-content" onclick="event.stopPropagation()"><h2 class="text-3xl font-bold text-white mb-4">DotSlash</h2><img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop" alt="DotSlash Platform" class="rounded-lg mb-6 w-full"><div class="text-gray-300 space-y-4"><p>Engineered a robust, full-stack MERN platform, DotSlash, providing over 200 curated competitive programming resources, 15+ comprehensive blogs, and guides.</p><p>Designed and deployed scalable RESTful APIs for user authentication, content creation, and real-time sharing, enabling contributions from a small team of friends and enhancing collaborative content management.</p></div><h3 class="font-semibold text-white mt-6 mb-3">Tech Stack</h3><div class="flex flex-wrap gap-2"><span class="skill-badge px-3 py-1 rounded-full text-sm">MongoDB</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Express.js</span><span class="skill-badge px-3 py-1 rounded-full text-sm">ReactJS</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Node.js</span><span class="skill-badge px-3 py-1 rounded-full text-sm">REST APIs</span></div><div class="mt-8 text-right"><a href="https://github.com/Shubhamkashyap1601/Dotslash" target="_blank" class="font-medium project-link hover:underline">View Source Code &rarr;</a></div></div></div>
+    <div id="modal-befunge" class="modal-overlay" onclick="closeModal('befunge')"><div class="modal-content" onclick="event.stopPropagation()"><h2 class="text-3xl font-bold text-white mb-4">Befunge Interpreter</h2><img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop" alt="Befunge Interpreter" class="rounded-lg mb-6 w-full"><div class="text-gray-300 space-y-4"><p>Developed a complete interpreter for Befunge-93, a stack-based, two-dimensional esoteric programming language. This project demonstrates a strong understanding of parsing, state management, and execution flow control.</p><p>The interpreter correctly handles the 2D grid-based code execution, where the instruction pointer can move in four directions (up, down, left, right), and manages the unique stack operations that define the language.</p></div><h3 class="font-semibold text-white mt-6 mb-3">Tech Stack</h3><div class="flex flex-wrap gap-2"><span class="skill-badge px-3 py-1 rounded-full text-sm">Java</span><span class="skill-badge px-3 py-1 rounded-full text-sm">Parsing</span><span class="skill-badge px-3 py-1 rounded-full text-sm">State Management</span></div><div class="mt-8 text-right"><a href="https://github.com/Shubhamkashyap1601/Befunge" target="_blank" class="font-medium project-link hover:underline">View Source Code &rarr;</a></div></div></div>
+    <div id="modal-blog-alphabeta" class="modal-overlay" onclick="closeModal('blog-alphabeta')"><div class="modal-content blog-content" onclick="event.stopPropagation()"><h2 class="text-3xl font-bold text-white mb-2">Understanding Alpha-Beta Pruning in Game AI</h2><p class="text-gray-400 mb-6">How an optimization technique can supercharge your Minimax algorithm for games like chess.</p><p>If you've ever tried building a game-playing AI for something like chess, checkers, or even tic-tac-toe, you've probably come across the Minimax algorithm. It's a fundamental concept for creating an AI that can think ahead in turn-based strategy games.</p><p>However, Minimax has a significant drawback. It exhaustively checks every possible move down to a specific depth, even when some of those moves are clearly bad. This brute-force approach can get very slow, very quickly. This is the exact problem that Alpha-Beta Pruning solves.</p><h3>Recap: The Minimax Algorithm</h3><p>Minimax works by evaluating every single branch of the game's decision tree, regardless of whether that branch could realistically affect the outcome. For instance, imagine you're playing chess and you find a move that's so terrible your opponent has an easy path to victory. You wouldn't waste time thinking about all the ways you could play from that losing position, right? But a basic Minimax algorithm would, unless you use Alpha-Beta pruning.</p><h3>Enter Alpha-Beta Pruning</h3><p>Alpha-Beta pruning is a smart optimization for Minimax that intelligently ignores parts of the search tree that won't influence the final decision. It does this by keeping track of two key values:</p><ul><li>Alpha (α): The best possible score that the maximizing player (our AI) can guarantee itself so far.</li><li>Beta (β): The best possible score that the minimizing player (the opponent) can guarantee itself so far.</li></ul><p>The magic happens when, at any point during the search, Alpha becomes greater than or equal to Beta. When this occurs, it means the current path is already worse than another path we've found, so we can safely "prune" it and stop searching any deeper.</p><h3>Example in Pseudocode</h3><pre><code>int alphaBeta(Node node, int depth, int alpha, int beta, bool maximizingPlayer) {
+    if (depth == 0 || node.isTerminal()) 
+        return evaluate(node);
+
+    if (maximizingPlayer) {
+        int value = -INF;
+        for (auto child : node.children()) {
+            value = max(value, alphaBeta(child, depth - 1, alpha, beta, false));
+            alpha = max(alpha, value);
+            if (alpha >= beta) break; // β cut-off
+        }
+        return value;
+    } else {
+        int value = INF;
+        for (auto child : node.children()) {
+            value = min(value, alphaBeta(child, depth - 1, alpha, beta, true));
+            beta = min(beta, value);
+            if (beta <= alpha) break; // α cut-off
+        }
+        return value;
+    }
+}</code></pre><h3>Why It’s Powerful</h3><p>Without this optimization, the complexity of Minimax is O(b^d), where 'b' is the number of possible moves per turn (the branching factor) and 'd' is the search depth. With Alpha-Beta pruning, the best-case complexity improves to roughly O(b^(d/2)). This is a huge improvement. It essentially allows you to double your search depth with the same amount of computing power. For a chess AI, that could be the difference between thinking 5 moves ahead and thinking 8 or 9 moves ahead, leading to a much stronger opponent.</p><h3>Key Points for Implementation</h3><ul><li>Move ordering matters: Alpha-Beta pruning is more effective if you search the most promising moves first.</li><li>Evaluation function quality: Pruning only works well if your evaluation function accurately reflects position quality.</li><li>Works with other optimizations: You can combine Alpha-Beta with iterative deepening, transposition tables, and quiescence search for even better performance.</li></ul><h3>In Practice — Chess Bots</h3><p>In professional chess engines like Stockfish, Alpha-Beta pruning is a cornerstone of their search logic. For example, a C++ chess bot using this technique would generate all legal moves, sort those moves to check the most promising ones first (like captures), and apply Alpha-Beta pruning during its recursive search to eliminate pointless calculations. The result is a faster, smarter AI that can see further into the future of the game, leading to much stronger gameplay.</p></div></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- TONE.JS SOUND SETUP ---
+            let soundsReady = false;
+            let isMuted = false;
+            
+            const hoverSynth = new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 },
+                volume: -20
+            }).toDestination();
+
+            const clickSynth = new Tone.Synth({
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.005, decay: 0.2, sustain: 0.1, release: 0.3 },
+                volume: -15
+            }).toDestination();
+
+            const bgMusic = new Tone.Loop(time => {
+                const synth = new Tone.Synth({
+                    oscillator: { type: 'amsine2', partials: [0, 1, 0.2, 0.1], harmonicity: 1.2 },
+                    envelope: { attack: 2, decay: 1, sustain: 0.5, release: 4 },
+                    volume: -25
+                }).toDestination();
+                synth.triggerAttackRelease(['C2', 'G2', 'Eb3'][Math.floor(Math.random() * 3)], '8n', time);
+            }, '2n');
+
+            // Function to initialize and start audio
+            async function startAudio() {
+                if (!soundsReady) {
+                    await Tone.start();
+                    bgMusic.start(0);
+                    Tone.Transport.start();
+                    soundsReady = true;
+                    console.log('Audio ready and music started.');
+                }
+            }
+            
+            // Start audio on the first user interaction
+            document.body.addEventListener('click', startAudio, { once: true });
+            
+            // --- SOUND EVENT LISTENERS ---
+            const interactiveElements = document.querySelectorAll('a, button, .cursor-pointer');
+
+            interactiveElements.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    if (soundsReady && !isMuted) {
+                        hoverSynth.triggerAttackRelease('C5', '8n');
+                    }
+                });
+                el.addEventListener('click', () => {
+                    if (soundsReady && !isMuted) {
+                        clickSynth.triggerAttackRelease('C4', '8n');
+                    }
+                });
+            });
+
+            // Mute button functionality
+            const muteBtn = document.getElementById('mute-btn');
+            const soundOnIcon = document.getElementById('sound-on-icon');
+            const soundOffIcon = document.getElementById('sound-off-icon');
+
+            muteBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                Tone.Destination.mute = isMuted;
+                soundOnIcon.classList.toggle('hidden', isMuted);
+                soundOffIcon.classList.toggle('hidden', !isMuted);
+            });
+
+
+            // --- THREE.JS SCENE SETUP ---
+            let scene, camera, renderer, particles;
+            let mouseX = 0, mouseY = 0;
+
+            function initThree() {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 300;
+
+                renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#bg-canvas"), alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                const particleCount = 5000;
+                const positions = new Float32Array(particleCount * 3);
+                const geometry = new THREE.BufferGeometry();
+
+                for (let i = 0; i < particleCount * 3; i++) {
+                    positions[i] = (Math.random() - 0.5) * 1000;
+                }
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.PointsMaterial({
+                    color: 0x38BDF8,
+                    size: 1.5,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending
+                });
+
+                particles = new THREE.Points(geometry, material);
+                scene.add(particles);
+
+                window.addEventListener("resize", onWindowResize, false);
+                document.addEventListener('mousemove', onMouseMove, false);
+                animate();
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function onMouseMove(event) {
+                mouseX = event.clientX - window.innerWidth / 2;
+                mouseY = event.clientY - window.innerHeight / 2;
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const time = Date.now() * 0.00005;
+                
+                camera.position.x += (mouseX - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                particles.rotation.x = time * 0.2;
+                particles.rotation.y = time * 0.4;
+
+                renderer.render(scene, camera);
+            }
+
+            initThree();
+
+            // --- SCROLL ANIMATION ---
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.section-card').forEach(card => {
+                observer.observe(card);
+            });
+
+            // --- NAVIGATION LOGIC ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+
+            function showSection(hash) {
+                window.scrollTo(0, 0);
+                sections.forEach(section => section.classList.toggle('visible', '#' + section.id === hash));
+                navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('href') === hash));
+                document.querySelectorAll(hash + ' .section-card').forEach(card => observer.observe(card));
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const hash = link.getAttribute('href');
+                    if (window.location.hash !== hash) {
+                        history.pushState(null, null, hash);
+                        showSection(hash);
+                    }
+                });
+            });
+            
+            window.addEventListener('popstate', () => showSection(window.location.hash || '#home'));
+            showSection(window.location.hash || '#home');
+        });
+
+        // --- MODAL LOGIC ---
+        function openModal(modalId) {
+            document.getElementById('modal-' + modalId).classList.add('visible');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById('modal-' + modalId).classList.remove('visible');
+        }
+    </script>
+</body>
+</html>
